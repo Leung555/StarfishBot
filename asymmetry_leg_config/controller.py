@@ -66,14 +66,14 @@ def main():
     default_angles = [0, 60, 120, 180, 240, 300]
     angles = default_angles  # Hexapod leg angles in degrees
     # angles = [0, 60, 120, 180, 240, 300] # symmetry
-    angles = [0, 10, 20, 50, 180, 300]  # asymmetry
+    angles = [0, 30, 60, 80, 120, 270]  # asymmetry
     for i, leg_handle in enumerate(leg_angle_handle):
         if angles[i] > 180:
             sim.setJointTargetPosition(leg_handle, math.radians(angles[i]-360))
         else:
             sim.setJointTargetPosition(leg_handle, math.radians(angles[i]))
     max_timesteps = 20
-    gait_planner_hexa = GaitPlanner(angles, max_legs_lifted=1, lifting_period=60)
+    gait_planner_hexa = GaitPlanner(angles, max_legs_lifted=2, lifting_period=40)
     # Create an instance of RandomPolygonAnimation with desired parameters
 
     cpg = CPG()

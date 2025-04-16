@@ -25,7 +25,7 @@ class GaitPlanner:
         self.max_legs_lifted = max_legs_lifted
         self.lifting_period = lifting_period
         self.fast_lifting_period = 4
-        self.stance_transition_time = 40
+        self.stance_transition_time = 20
         # timesteps = 0
         for i in range(len(angles)):
             self.lifted_legs_timer[i] = 0
@@ -147,7 +147,7 @@ class GaitPlanner:
                 self.leg_stance_state[leg] = True
                 self.leg_stance_state_commands[leg] = True
             elif timer < self.stance_transition_time:
-                self.leg_stance_state[leg] = True
+                # self.leg_stance_state[leg] = True
                 self.leg_stance_state_commands[leg] = True
         
         # Stability prediction for each leg
