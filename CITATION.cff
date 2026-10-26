@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use StarfishBot in research, please cite this software and the associated dataset or paper."
+title: "StarfishBot"
+type: software
+version: 0.1.0
+date-released: 2026-08-20
+authors:
+  - name: "StarfishBot contributors"
+repository-code: "https://github.com/Leung555/StarfishBot"
+license: GPL-3.0-only
