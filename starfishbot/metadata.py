@@ -8,7 +8,8 @@ import json
 import platform
 import subprocess
 import sys
-from datetime import UTC, datetime
+from dataclasses import asdict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -55,12 +56,16 @@ def _display_path(path: Path, repository_root: Path) -> str:
 def base_metadata(config: Any) -> dict[str, Any]:
     status = _git(config.repository_root, "status", "--porcelain")
     return {
-        "schema_version": 1,
-        "created_at_utc": datetime.now(UTC).isoformat(),
+        "schema_version": 2,
+        "created_at_utc": datetime.now(timezone.utc).isoformat(),
         "status": "initializing",
         "experiment_name": config.experiment.name,
         "experiment_mode": config.experiment.mode,
         "random_seed": config.experiment.seed,
+        "settings": {
+            name: asdict(getattr(config, name))
+            for name in ("experiment", "robot", "gait", "motor", "simulator", "output")
+        },
         "git": {
             "commit": _git(config.repository_root, "rev-parse", "HEAD"),
             "branch": _git(config.repository_root, "branch", "--show-current"),
@@ -75,8 +80,6 @@ def base_metadata(config: Any) -> dict[str, Any]:
                     "coppeliasim-zmqremoteapi-client",
                     "shapely",
                     "numpy",
-                    "matplotlib",
-                    "pandas",
                 )
             ),
         },
@@ -90,7 +93,7 @@ def base_metadata(config: Any) -> dict[str, Any]:
             "Foot contacts are idealised on a circle at the configured leg radius.",
             "The centre-of-mass projection is fixed at the robot-frame origin.",
             "The reported stability margin is a geometric proxy, not a dynamic tipping margin.",
-            "Lifted legs are commanded states and are not confirmed by contact sensors.",
+            "Scheduled support exclusions include landing transitions, not measured foot contact.",
         ],
     }
 

@@ -1,0 +1,9 @@
+{
+  "experiment": {
+    "name": "smoke",
+    "seed": 42,
+    "samples": 2,
+    "steps_per_sample": 300,
+    "minimum_angle_separation_deg": 25.0
+  }
+}

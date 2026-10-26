@@ -6,7 +6,7 @@ import random
 
 
 def circular_angle_separations(angles_deg: list[float]) -> list[float]:
-    """Return the smaller circular separation between adjacent sorted angles."""
+    """Return forward circular gaps between adjacent sorted angles."""
     ordered = sorted(angle % 360.0 for angle in angles_deg)
     if len(ordered) < 2:
         return []

@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 
-from shapely.geometry import MultiPoint, Point, Polygon
-
-from .stability import contact_points, signed_margin_from_geometry, signed_stability_margin
+from .stability import signed_stability_margin
 
 
 class GaitPlanner:
@@ -42,35 +40,6 @@ class GaitPlanner:
         self.leg_stance_state_commands = {index: True for index in range(self.num_legs)}
         self.this_cycle_lifted: list[int] = []
 
-    def calculate_support_polygon(
-        self, angles: Sequence[float], leg_radius: float | None = None
-    ) -> tuple[Polygon, Point]:
-        """Compatibility helper returning the idealised hull and fixed centre."""
-        geometry = Polygon(contact_points(angles, leg_radius or self.leg_radius))
-        if not geometry.is_valid or geometry.area == 0:
-            raise ValueError("at least three non-collinear contacts are required")
-        return geometry, Point(0.0, 0.0)
-
-    def calculate_stability(
-        self,
-        polygon: Polygon,
-        cog: Point,
-        test_leg_index: int,
-        lifted_legs_index: Iterable[int],
-        visualize: bool = False,
-    ) -> tuple[float, bool]:
-        """Compatibility helper for notebooks using an existing polygon."""
-        if visualize:
-            raise ValueError("visualization moved to the analysis notebooks")
-        coordinates = list(polygon.exterior.coords)[:-1]
-        excluded = set(lifted_legs_index) | {test_leg_index}
-        if any(index < 0 or index >= len(coordinates) for index in excluded):
-            raise IndexError("leg index out of range")
-        remaining = [point for index, point in enumerate(coordinates) if index not in excluded]
-        geometry = MultiPoint(remaining).convex_hull if remaining else MultiPoint([])
-        margin = signed_margin_from_geometry(geometry, (cog.x, cog.y))
-        return margin, margin <= 0.0
-
     def _lift_leg(self, leg_index: int, lifting_period: int) -> None:
         self.lifted_legs_timer[leg_index] = lifting_period
         self.leg_stance_state[leg_index] = False
@@ -94,7 +63,11 @@ class GaitPlanner:
     def step(
         self, angles: Sequence[float], stability_threshold: float = 0.2
     ) -> tuple[list[bool], list[int]]:
-        """Advance the schedule and return commands plus the current lifted set."""
+        """Advance the schedule and return motor commands plus scheduled exclusions.
+
+        During landing, a leg receives a stance command but remains excluded
+        from the support proxy until its lift timer expires.
+        """
         if len(angles) != self.num_legs:
             raise ValueError("the number of angles cannot change after initialization")
 
@@ -127,9 +100,3 @@ class GaitPlanner:
         lifted = [leg for leg, in_stance in self.leg_stance_state.items() if not in_stance]
         commands = [self.leg_stance_state_commands[index] for index in range(self.num_legs)]
         return commands, lifted
-
-    def gait_planner(
-        self, angles: Sequence[float], stability_threshold: float = 0.2
-    ) -> tuple[list[bool], list[int]]:
-        """Compatibility alias for the original controller."""
-        return self.step(angles, stability_threshold)

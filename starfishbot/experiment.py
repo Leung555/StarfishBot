@@ -7,7 +7,7 @@ import logging
 import math
 import random
 import shutil
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +22,7 @@ LOGGER = logging.getLogger("starfishbot.experiment")
 
 
 def _create_run_directory(config: RunConfig) -> Path:
-    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S.%fZ")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
     run_directory = config.output_directory / f"{config.experiment.name}-{timestamp}"
     run_directory.mkdir(parents=True, exist_ok=False)
     return run_directory
@@ -30,7 +30,9 @@ def _create_run_directory(config: RunConfig) -> Path:
 
 def _configure_logging(log_path: Path, verbose: bool) -> None:
     LOGGER.setLevel(logging.DEBUG)
-    LOGGER.handlers.clear()
+    for handler in LOGGER.handlers[:]:
+        handler.close()
+        LOGGER.removeHandler(handler)
     formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
     file_handler = logging.FileHandler(log_path, encoding="utf-8")
     file_handler.setFormatter(formatter)
@@ -92,6 +94,7 @@ def _csv_header(config: RunConfig) -> list[str]:
         [
             "proxy_support_margin_radius",
             "commanded_lifted_legs",
+            "scheduled_lifted_legs",
             "min_sample_proxy_margin_radius",
             "mean_sample_proxy_margin_radius",
         ]
@@ -111,6 +114,7 @@ def _run_samples(
 ) -> int:
     rng = random.Random(config.experiment.seed)
     global_step = 0
+    total_steps = config.experiment.samples * config.experiment.steps_per_sample
 
     motor_mapper = MotorMapper(
         config.robot.num_legs,
@@ -167,7 +171,10 @@ def _run_samples(
                 "global_step": global_step,
                 "sim_time_s": sim.getSimulationTime(),
                 "proxy_support_margin_radius": margin,
-                "commanded_lifted_legs": ";".join(map(str, lifted_legs)),
+                "commanded_lifted_legs": ";".join(
+                    str(leg) for leg, in_stance in enumerate(gait_commands) if not in_stance
+                ),
+                "scheduled_lifted_legs": ";".join(map(str, lifted_legs)),
                 **orientation,
             }
             row.update({f"angle_{index}_deg": angle for index, angle in enumerate(angles)})
@@ -179,6 +186,15 @@ def _run_samples(
             )
             sample_rows.append(row)
             global_step += 1
+            if global_step % 200 == 0:
+                LOGGER.info(
+                    "step=%d/%d sample=%d/%d sim_time=%.2fs",
+                    global_step,
+                    total_steps,
+                    sample_index + 1,
+                    config.experiment.samples,
+                    row["sim_time_s"],
+                )
 
         margins = [float(row["proxy_support_margin_radius"]) for row in sample_rows]
         minimum = min(margins)
@@ -205,7 +221,7 @@ def run_experiment(config: RunConfig, *, verbose: bool = False) -> Path:
 
     run_directory = _create_run_directory(config)
     _configure_logging(run_directory / "simulation.log", verbose)
-    shutil.copy2(config.path, run_directory / "config.toml")
+    shutil.copy2(config.path, run_directory / "config.json")
     metadata = base_metadata(config)
     metadata_path = run_directory / "metadata.json"
     write_metadata(metadata_path, metadata)
@@ -246,12 +262,12 @@ def run_experiment(config: RunConfig, *, verbose: bool = False) -> Path:
             )
 
         metadata["status"] = "completed"
-        metadata["completed_at_utc"] = datetime.now(UTC).isoformat()
+        metadata["completed_at_utc"] = datetime.now(timezone.utc).isoformat()
         metadata["total_steps"] = total_steps
         LOGGER.info("completed %d steps; results=%s", total_steps, run_directory)
     except Exception as error:
         metadata["status"] = "failed"
-        metadata["failed_at_utc"] = datetime.now(UTC).isoformat()
+        metadata["failed_at_utc"] = datetime.now(timezone.utc).isoformat()
         metadata["error"] = f"{type(error).__name__}: {error}"
         LOGGER.exception("experiment failed")
         raise

@@ -1,34 +1,21 @@
-# Python bytecode and caches
+# Installed environments and generated Python files
+.venv/
+venv/
 __pycache__/
 *.py[cod]
+*.egg-info/
 .pytest_cache/
 .ruff_cache/
 .coverage
 htmlcov/
-
-# Environments and packaging
-.venv/
-venv/
 build/
 dist/
-*.egg-info/
 
-# Editors and operating systems
+# Generated experiment runs
+/results/
+*.log
+
+# Local editor and operating-system settings
 .vscode/
 .idea/
 .DS_Store
-
-# Jupyter temporary files
-.ipynb_checkpoints/
-
-# Generated experiment artifacts (keep policies/examples in Git)
-/results/*
-!/results/README.md
-/data/raw/*
-!/data/raw/.gitkeep
-/data/processed/*
-!/data/processed/.gitkeep
-/asymmetry_leg_config/data/
-
-# Runtime logs
-*.log

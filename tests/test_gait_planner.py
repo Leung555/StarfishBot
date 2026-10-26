@@ -34,3 +34,12 @@ def test_lift_limit_is_respected() -> None:
     for _ in range(5):
         _, lifted = planner.step(ANGLES)
         assert len(lifted) <= 1
+
+
+def test_landing_command_precedes_scheduled_support_restoration():
+    planner = GaitPlanner(ANGLES, lifting_period=4, fast_lifting_period=4, stance_transition_time=3)
+    planner.step(ANGLES)
+    planner.step(ANGLES)
+    commands, scheduled = planner.step(ANGLES)
+    assert commands[0] is True
+    assert 0 in scheduled

@@ -26,10 +26,6 @@ class CPG:
     def output(self) -> tuple[float, float]:
         return self.o1, self.o2
 
-    def get_CPG_output(self) -> list[float]:
-        """Compatibility alias for the original research scripts."""
-        return list(self.output())
-
 
 class MotorMapper:
     """Map stance states to joint targets using an explicit control mode.
@@ -62,10 +58,6 @@ class MotorMapper:
         if len(offsets) != self.num_motors_per_leg:
             raise ValueError("one lift offset is required for each motor")
         self.lift_offsets = [float(value) for value in offsets]
-
-    def set_weight_leg(self, weights: Sequence[float] = (0.0, 0.0, 0.0)) -> None:
-        """Compatibility alias for the original motor mapper."""
-        self.set_lift_offsets(weights)
 
     def map_to_motors(
         self,
